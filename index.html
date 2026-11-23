@@ -75,7 +75,6 @@ d.shadow.mapSize.set(2048,2048);Object.assign(d.shadow.camera,{left:-14,right:14
 // materials & textures
 const mats={};
 const glass=new THREE.MeshStandardMaterial({color:0x9cc8e0,transparent:true,opacity:.3,roughness:.1});
-// 發光燈罩與燈泡材質
 const lampShadeMat=new THREE.MeshStandardMaterial({color:0xefe3c8,roughness:.45,emissive:0xffc978,emissiveIntensity:.12});
 const lampBulbMat=new THREE.MeshStandardMaterial({color:0xfff6dc,roughness:.2,emissive:0xffdf9e,emissiveIntensity:.3});
 
@@ -213,7 +212,7 @@ box(1270,900,1520,1140,.015,0x8f8b84,0,sc,1);box(1278,908,1512,1132,.016,0xa29e9
 function curtain(x1,x2,y,c=0xe7e2d8){for(let x=x1,i=0;x<x2;x+=14,i++)box(x,y+(i%2?0:6),x+13,y+(i%2?6:12),2.3,c,.02)}
 curtain(395,640,1252);curtain(935,1205,1250);curtain(1265,1635,1250);box(395,1248,640,1252,.04,0x666666,2.3);box(935,1246,1205,1250,.04,0x666666,2.3);box(1265,1246,1635,1250,.04,0x666666,2.3);
 
-// 發光吊燈（餐廳 & 廚房中島）
+// 發光吊燈
 [[1360,589],[1421,589],[1482,589]].forEach(p=>{
   cyl(p[0],p[1],1.5,1.5,.8,0x333333,1.65);
   cyl(p[0],p[1],22,22,.22,lampShadeMat,1.5);
@@ -276,50 +275,66 @@ function label(t,x,y){const c=document.createElement('canvas');c.width=256;c.hei
   s.scale.set(1.7,.53,1);s.position.set((x-CX)*S,2.9,(y-CY)*S);s.renderOrder=9;labs.add(s)}
 [['主臥房',470,1000],['主浴廁',480,590],['公共浴廁',740,590],['開放廚房',1030,560],['後陽台',1040,380],['多功能房',790,1000],['書房',1030,1060],['客廳',1470,1000],['餐廳',1440,760],['玄關',1800,420],['前陽台',1460,1380]].forEach(l=>label(...l));
 
-// ===== 3D 外觀尺寸標註線 =====
+// controls & 區域定義
+const $=id=>document.getElementById(id);
+let night=false,focus=null;
+const RM=[['主臥房',243,682,650,1285],['主浴廁',388,305,588,675],['公共浴廁',588,468,892,696],['後陽台',888,250,1192,470],['開放廚房',885,470,1322,706],['多功能房',652,823,912,1285],['書房',912,812,1190,1285],['客廳',1190,812,1650,1290],['餐廳',1245,296,1650,812],['玄關',1648,250,2045,515],['前陽台',1245,1290,1670,1480]];
+
+// ===== 動態 3D 尺寸標註（全戶外觀 vs 單一區域長寬） =====
 const dims=new THREE.Group();sc.add(dims);
-function addDimLine(x1,y1,x2,y2,offX,offY,textOverride){
-  const lenCm=textOverride||Math.round(Math.hypot(x2-x1,y2-y1)*S*100);
-  const labelStr=`${lenCm} cm`;
+function clearDims(){
+  while(dims.children.length){
+    const o=dims.children.pop();
+    if(o.geometry)o.geometry.dispose();
+    if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}
+  }
+}
+function addDimLine(x1,y1,x2,y2,offX,offY,prefix='',alwaysTop=false){
+  const lenCm=Math.round(Math.hypot(x2-x1,y2-y1)*S*100);
+  const labelStr=`${prefix}${lenCm} cm`;
   const ax=(x1+offX-CX)*S,az=(y1+offY-CY)*S;
   const bx=(x2+offX-CX)*S,bz=(y2+offY-CY)*S;
   const ox=(x1-CX)*S,oz=(y1-CY)*S,px=(x2-CX)*S,pz=(y2-CY)*S;
   const y=.03;
-  const lineMat=new THREE.LineBasicMaterial({color:0xc93b2b});
-  const extMat=new THREE.LineBasicMaterial({color:0xc93b2b,transparent:true,opacity:.45});
-  const pts=[new THREE.Vector3(ax,y,az),new THREE.Vector3(bx,y,bz)];
-  dims.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),lineMat));
-  // 延伸線
-  dims.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(ox,y,oz),new THREE.Vector3(ax,y,az)]),extMat));
-  dims.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(px,y,pz),new THREE.Vector3(bx,y,bz)]),extMat));
-  // 端點短橫標記
-  const ang=Math.atan2(bz-az,bx-ax)+Math.PI/4,tk=.14;
+  const lineMat=new THREE.LineBasicMaterial({color:0xc93b2b,depthTest:!alwaysTop});
+  const extMat=new THREE.LineBasicMaterial({color:0xc93b2b,transparent:true,opacity:.45,depthTest:!alwaysTop});
+  const addL=(p1,p2,m)=>{const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([p1,p2]),m);if(alwaysTop)l.renderOrder=7;dims.add(l)};
+  addL(new THREE.Vector3(ax,y,az),new THREE.Vector3(bx,y,bz),lineMat);
+  addL(new THREE.Vector3(ox,y,oz),new THREE.Vector3(ax,y,az),extMat);
+  addL(new THREE.Vector3(px,y,pz),new THREE.Vector3(bx,y,bz),extMat);
+  const ang=Math.atan2(bz-az,bx-ax)+Math.PI/4,tk=.13;
   [[ax,az],[bx,bz]].forEach(([tx,tz])=>{
-    const tp=[new THREE.Vector3(tx-Math.cos(ang)*tk,y,tz-Math.sin(ang)*tk),new THREE.Vector3(tx+Math.cos(ang)*tk,y,tz+Math.sin(ang)*tk)];
-    dims.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(tp),lineMat));
+    addL(new THREE.Vector3(tx-Math.cos(ang)*tk,y,tz-Math.sin(ang)*tk),new THREE.Vector3(tx+Math.cos(ang)*tk,y,tz+Math.sin(ang)*tk),lineMat);
   });
-  // 尺寸文字牌
-  const c=document.createElement('canvas');c.width=240;c.height=64;const g=c.getContext('2d');
-  g.fillStyle='rgba(255,250,245,.92)';g.fillRect(4,6,232,52);
-  g.strokeStyle='#c93b2b';g.lineWidth=3;g.strokeRect(4,6,232,52);
-  g.fillStyle='#b8291a';g.font='bold 30px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(labelStr,120,33);
+  const c=document.createElement('canvas');c.width=260;c.height=64;const g=c.getContext('2d');
+  g.fillStyle='rgba(255,250,245,.94)';g.fillRect(4,6,252,52);
+  g.strokeStyle='#c93b2b';g.lineWidth=3;g.strokeRect(4,6,252,52);
+  g.fillStyle='#b8291a';g.font='bold 28px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(labelStr,130,33);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));
-  sp.scale.set(1.45,.39,1);sp.position.set((ax+bx)/2,.22,(az+bz)/2);sp.renderOrder=8;
+  sp.scale.set(1.5,.37,1);sp.position.set((ax+bx)/2,.22,(az+bz)/2);sp.renderOrder=8;
   dims.add(sp);
 }
-// 外圍主要外觀尺寸（依比例尺換算公分）
-addDimLine(243,1280,1670,1280,0,245);   // 下側主外牆總長
-addDimLine(1250,1474,1665,1474,0,65);   // 前陽台面寬
-addDimLine(243,262,1648,262,0,-75);     // 上側主建築總寬
-addDimLine(1648,260,2040,260,0,-75);    // 右上玄關凸出寬度
-addDimLine(243,262,243,1280,-85,0);     // 左側總深
-addDimLine(2040,260,2040,510,85,0);     // 右側玄關外牆深
-addDimLine(1648,510,1648,1285,85,0);    // 右側客廳外牆深
-
-// controls
-const $=id=>document.getElementById(id);
-let night=false,focus=null;
-const RM=[['主臥房',243,682,650,1285],['主浴廁',388,305,588,675],['公共浴廁',588,468,892,696],['後陽台',888,250,1192,470],['開放廚房',885,470,1322,706],['多功能房',652,823,912,1285],['書房',912,812,1190,1285],['客廳',1190,812,1650,1290],['餐廳',1245,296,1650,812],['玄關',1648,250,2045,515],['前陽台',1245,1290,1670,1480]];
+function renderDims(){
+  clearDims();
+  if(!focus){
+    // 全戶模式：顯示外圍外觀尺寸
+    addDimLine(243,1280,1670,1280,0,245);   // 下側主外牆總長
+    addDimLine(1250,1474,1665,1474,0,65);   // 前陽台面寬
+    addDimLine(243,262,1648,262,0,-75);     // 上側主建築總寬
+    addDimLine(1648,260,2040,260,0,-75);    // 右上玄關凸出寬度
+    addDimLine(243,262,243,1280,-85,0);     // 左側總深
+    addDimLine(2040,260,2040,510,85,0);     // 右側玄關外牆深
+    addDimLine(1648,510,1648,1285,85,0);    // 右側客廳外牆深
+  }else{
+    // 單一區域模式：僅顯示該區域範圍的寬與長
+    const r=RM.find(q=>q[0]===focus);
+    if(r){
+      const [,x1,y1,x2,y2]=r;
+      addDimLine(x1,y2,x2,y2,0,36,'寬 ',true);
+      addDimLine(x2,y1,x2,y2,36,0,'長 ',true);
+    }
+  }
+}
 
 // 計算各空間長寬與坪數
 const roomStats={};
@@ -350,7 +365,6 @@ function apply(){
   hemi.color.set(night?0x6a7aa8:0xfff4e6);hemi.groundColor.set(night?0x1a1c28:0x8a7a6a);hemi.intensity=night?.2:.5;
   d.color.set(night?0x8fa3d8:0xfff0dd);d.intensity=night?.2:.9;
   gnd.material.color.set(night?0x161a24:(dark?0x35302a:0xcdc6ba));R.toneMappingExposure=night?1.25:.8;
-  // 夜晚燈罩發光
   lampShadeMat.emissiveIntensity=night?1.35:.12;
   lampBulbMat.emissiveIntensity=night?2.4:.25;
 
@@ -360,6 +374,7 @@ function apply(){
   document.querySelectorAll('#rooms button').forEach(b=>b.classList.toggle('on',(b.dataset.r||null)===focus));
   $('dn').textContent=night?'☀ 白天':'🌙 夜晚';$('dn').classList.toggle('on',night);
   updateInfo();
+  renderDims();
 }
 
 function pick(n){
