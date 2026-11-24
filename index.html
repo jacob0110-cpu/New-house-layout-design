@@ -12,46 +12,120 @@ body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"N
 #top-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%}
 #t,#info{font-size:13px;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:6px 11px;backdrop-filter:blur(6px);pointer-events:auto;line-height:1.4}
 #info{font-weight:600;border-color:var(--accent)}
-#rooms{display:flex;flex-wrap:wrap;gap:5px;pointer-events:auto;max-height:26vh;overflow-y:auto}
+#rooms{display:flex;flex-wrap:wrap;gap:5px;pointer-events:auto;max-height:24vh;overflow-y:auto}
 #rooms button{padding:5px 10px;font-size:13px;border-radius:16px}
-#bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px));z-index:10;pointer-events:none}
-#bar button{pointer-events:auto}
-button{background:var(--panel);color:var(--fg);border:1px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:14px;cursor:pointer;backdrop-filter:blur(6px);transition:transform .1s,outline-color .15s}
+#bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px));z-index:10;pointer-events:none}
+#bar button,.pan-pad button{pointer-events:auto}
+button{background:var(--panel);color:var(--fg);border:1px solid var(--bd);border-radius:10px;padding:7px 11px;font-size:13.5px;cursor:pointer;backdrop-filter:blur(6px);transition:transform .1s,outline-color .15s}
 button:active{transform:scale(.96)}
 button.on{outline:2px solid var(--accent);font-weight:600}
+
+/* 方向平移迷你控制鈕 */
+.pan-pad{display:inline-flex;align-items:center;gap:3px;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:2px 4px;backdrop-filter:blur(6px);pointer-events:auto}
+.pan-pad button{border:none;background:transparent;padding:5px 8px;font-size:13px;border-radius:7px;backdrop-filter:none}
+.pan-pad button:hover{background:rgba(192,137,79,.16)}
+
+/* 預覽列印視窗 */
+#printModal{position:fixed;inset:0;background:rgba(20,18,16,.72);backdrop-filter:blur(5px);z-index:50;display:none;overflow-y:auto;padding:20px 12px}
+#printModal.open{display:flex;justify-content:center;align-items:flex-start}
+#printSheet{background:#fff;color:#222;width:100%;max-width:820px;border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.35);padding:24px 28px;box-sizing:border-box;margin:auto}
+.ps-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #2b2620;padding-bottom:10px;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+.ps-title{font-size:20px;font-weight:700;margin:0;color:#1f1b17}
+.ps-meta{font-size:12.5px;color:#555;text-align:right;line-height:1.5}
+.ps-img-wrap{border:1px solid #d5cfc7;border-radius:8px;overflow:hidden;background:#f5f2ed;margin-bottom:14px;text-align:center}
+#printImg{width:100%;max-height:430px;object-fit:contain;display:block;margin:0 auto}
+.ps-summary{background:#faf7f2;border-left:4px solid #c0894f;padding:8px 12px;font-size:13.5px;font-weight:600;margin-bottom:14px;color:#2b2620}
+.ps-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:12px}
+.ps-table th,.ps-table td{border:1px solid #dcd6cd;padding:6px 10px;text-align:left}
+.ps-table th{background:#f2ede4;font-weight:600;color:#2b2620}
+.ps-table tr.hl{background:#fff4e4;font-weight:600}
+.ps-note{font-size:11.5px;color:#666;margin:0 0 16px}
+.ps-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;border-top:1px solid #e5dfd6;padding-top:14px}
+.ps-actions button{background:#f5f2ed;color:#222;border:1px solid #ccc4b8;padding:8px 16px;font-size:14px;font-weight:600}
+.ps-actions button.primary{background:#c0894f;color:#fff;border-color:#a8733c}
+
 @media (max-width:640px){
-  #t{font-size:12px;padding:5px 9px}
-  #info{font-size:12px;padding:5px 9px}
+  #t,#info{font-size:12px;padding:5px 9px}
   #rooms button{padding:4px 9px;font-size:12px}
-  button{padding:7px 9px;font-size:12px;border-radius:8px}
+  button{padding:6px 8px;font-size:12px;border-radius:8px}
+  .pan-pad button{padding:4px 7px;font-size:12px}
+  #printSheet{padding:16px}
+  .ps-title{font-size:17px}
+}
+
+@media print{
+  @page{size:A4 portrait;margin:12mm}
+  body{background:#fff !important;overflow:visible !important}
+  #c,#hud,#bar,.ps-actions{display:none !important}
+  #printModal{position:static !important;display:block !important;background:none !important;padding:0 !important;overflow:visible !important}
+  #printSheet{box-shadow:none !important;border-radius:0 !important;max-width:100% !important;padding:0 !important}
+  #printImg{max-height:360px !important}
 }
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="hud">
   <div id="top-row">
-    <div id="t">拖曳旋轉 ・ 滾輪/雙指縮放 ・ 右鍵/三指平移</div>
+    <div id="t">拖曳旋轉 ・ 右鍵/雙指平移 ・ 滾輪縮放</div>
     <div id="info"></div>
   </div>
   <div id="rooms"></div>
 </div>
 <div id="bar">
-<button id="l">⟲ 左轉</button><button id="r">右轉 ⟳</button>
-<button id="zi">＋ 放大</button><button id="zo">－ 縮小</button>
-<button id="auto">自動旋轉</button><button id="wall" class="on">牆體:全高</button>
-<button id="dimBtn" class="on">📐 尺寸</button>
-<button id="dn">🌙 夜晚</button><button id="lab" class="on">名稱</button><button id="top">俯視</button><button id="iso">預設視角</button>
+  <button id="mode">✋ 模式:旋轉</button>
+  <div class="pan-pad" title="畫面平移 (支援方向鍵 / WASD)">
+    <button id="pl" aria-label="向左平移">⬅</button>
+    <button id="pu" aria-label="向上平移">⬆</button>
+    <button id="pd" aria-label="向下平移">⬇</button>
+    <button id="pr" aria-label="向右平移">➡</button>
+  </div>
+  <button id="l">⟲ 左轉</button><button id="r">右轉 ⟳</button>
+  <button id="zi">＋</button><button id="zo">－</button>
+  <button id="auto">自動旋轉</button><button id="wall" class="on">牆體:全高</button>
+  <button id="dimBtn" class="on">📐 尺寸</button>
+  <button id="dn">🌙 夜晚</button><button id="lab" class="on">名稱</button>
+  <button id="eye">👁 人視角</button><button id="top">俯視</button><button id="iso">預設視角</button>
+  <button id="printBtn">🖨 預覽列印</button>
 </div>
+
+<!-- 預覽列印彈窗 -->
+<div id="printModal" role="dialog" aria-modal="true" aria-labelledby="psTitle">
+  <div id="printSheet">
+    <div class="ps-head">
+      <h2 class="ps-title" id="psTitle">平面配置 3D 預覽與尺寸報告</h2>
+      <div class="ps-meta" id="psMeta"></div>
+    </div>
+    <div class="ps-img-wrap">
+      <img id="printImg" alt="3D 平面配置預覽圖">
+    </div>
+    <div class="ps-summary" id="psSummary"></div>
+    <table class="ps-table">
+      <thead>
+        <tr><th>空間區域</th><th>概略面寬 × 深度</th><th>概算面積</th><th>概算坪數</th></tr>
+      </thead>
+      <tbody id="psBody"></tbody>
+    </table>
+    <p class="ps-note">※ 以上尺寸與坪數係依原始平面圖比例尺等比例換算之概略參考值，實際施工與訂製家具仍請以現場雷射丈量為準。</p>
+    <div class="ps-actions">
+      <button id="dlImgBtn">📥 下載圖檔 (PNG)</button>
+      <button id="doPrintBtn" class="primary">🖨 立即列印 / 另存 PDF</button>
+      <button id="closePrintBtn">✕ 關閉預覽</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 const S=1/127.5,CX=1137,CY=812,WH=2.45,T=8;
 const cv=document.getElementById('c');
-const R=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,preserveDrawingBuffer:true});
 R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
 const dark=matchMedia('(prefers-color-scheme:dark)').matches;
 const sc=new THREE.Scene();sc.background=new THREE.Color(dark?0x25221e:0xd8d2c7);
 const cam=new THREE.PerspectiveCamera(40,1,.1,200);
-const ctl=new THREE.OrbitControls(cam,cv);ctl.enableDamping=true;ctl.maxPolarAngle=Math.PI/2.05;ctl.minDistance=2;ctl.maxDistance=60;
+const ctl=new THREE.OrbitControls(cam,cv);
+ctl.enableDamping=true;ctl.enablePan=true;ctl.screenSpacePanning=true;ctl.panSpeed=1.1;
+ctl.maxPolarAngle=Math.PI/2.03;ctl.minDistance=1.5;ctl.maxDistance=60;
 
 // 鏡頭平滑移動狀態
 let goalPos=null,goalTgt=null;
@@ -65,7 +139,10 @@ function flyTo(pos,tgt,instant=false){
 }
 ctl.addEventListener('start',()=>{goalPos=null;goalTgt=null});
 
-function iso(instant=false){flyTo(new THREE.Vector3(0,14,13),new THREE.Vector3(0,0,0),instant)}
+function iso(instant=false){
+  ctl.maxPolarAngle=Math.PI/2.03;
+  flyTo(new THREE.Vector3(0,14,13),new THREE.Vector3(0,0,0),instant);
+}
 iso(true);
 
 const hemi=new THREE.HemisphereLight(0xfff4e6,0x8a7a6a,.5);sc.add(hemi);
@@ -94,8 +171,10 @@ function box(x1,y1,x2,y2,h,c,y0=0,g=sc,r=.8){
   m.position.set(((x1+x2)/2-CX)*S,y0+h/2,((y1+y2)/2-CY)*S);m.castShadow=c!=='glass'&&!c?.emissive;m.receiveShadow=true;g.add(m);return m}
 function cyl(cx,cy,rx,ry,h,c,y0=0,r=.7){const m=new THREE.Mesh(new THREE.CylinderGeometry(1,1,h,28),mat(c,r));
   m.scale.set(rx*S,1,ry*S);m.position.set((cx-CX)*S,y0+h/2,(cy-CY)*S);m.castShadow=!c?.emissive;m.receiveShadow=true;sc.add(m);return m}
+
+const floorGroup=new THREE.Group();sc.add(floorGroup);
 function floor(x1,y1,x2,y2,k,o=0){const t=TX[k].clone();t.needsUpdate=true;t.repeat.set((x2-x1)*S*REP[k]/2,(y2-y1)*S*REP[k]/2);
-  const m=new THREE.MeshStandardMaterial({map:t,roughness:.6});const b=box(x1,y1,x2,y2,.1,m,-.1+o*.0008);b.castShadow=false}
+  const m=new THREE.MeshStandardMaterial({map:t,roughness:.6});const b=box(x1,y1,x2,y2,.1,m,-.1+o*.0008,floorGroup);b.castShadow=false}
 
 // floors (原稿 CAD 座標)
 [[245,682,650,1272,'wood'],[388,315,578,665,'bt'],[590,480,885,690,'bt'],[905,275,1175,460,'tile'],
@@ -103,12 +182,38 @@ function floor(x1,y1,x2,y2,k,o=0){const t=TX[k].clone();t.needsUpdate=true;t.rep
 [655,830,912,1272,'wood'],[1648,305,2040,510,'stone'],[1870,260,2040,305,'stone'],[1250,1290,1665,1472,'deck'],[388,665,608,682,'wood']]
 .forEach((f,i)=>floor(...f,i));
 
-const wg=new THREE.Group();sc.add(wg);
+// 牆體分組：矮牆結構 (wgLow) 與可切剖的高牆結構 (wgHigh)
+const wgLow=new THREE.Group(),wgHigh=new THREE.Group();
+sc.add(wgLow);sc.add(wgHigh);
+const CUT_H=1.05;
 function wall(x1,y1,x2,y2,c=0xe2dcd0,gaps=[]){
   const H=y1===y2,a=H?x1:y1,b=H?x2:y2,f=H?y1:x1;
-  const seg=(p,q,y0,h,col)=>{if(q-p<1||h<=0)return;H?box(p,f-T,q,f+T,h,col,y0,wg):box(f-T,p,f+T,q,h,col,y0,wg)};
-  const gl=(p,q,y0,h)=>{H?box(p,f-1.5,q,f+1.5,h,'glass',y0,wg):box(f-1.5,p,f+1.5,q,h,'glass',y0,wg)};
-  const fr=(p,q,k)=>{const c2=0xe9e3d8,w=T+1.5;[[p-3,p],[q,q+3]].forEach(v=>H?box(v[0],f-w,v[1],f+w,2.1,c2,0,wg):box(f-w,v[0],f+w,v[1],2.1,c2,0,wg));H?box(p-3,f-w,q+3,f+w,.06,c2,2.1,wg):box(f-w,p-3,f+w,q+3,.06,c2,2.1,wg);if(k==='w')H?box(p-3,f-w-2,q+3,f+w+2,.05,c2,.88,wg):box(f-w-2,p-3,f+w+2,q+3,.05,c2,.88,wg)};
+  const seg=(p,q,y0,h,col)=>{
+    if(q-p<1||h<=0)return;
+    const y1Top=y0+h;
+    if(y1Top<=CUT_H){
+      H?box(p,f-T,q,f+T,h,col,y0,wgLow):box(f-T,p,f+T,q,h,col,y0,wgLow);
+    }else if(y0>=CUT_H){
+      H?box(p,f-T,q,f+T,h,col,y0,wgHigh):box(f-T,p,f+T,q,h,col,y0,wgHigh);
+    }else{
+      const h1=CUT_H-y0,h2=y1Top-CUT_H;
+      H?box(p,f-T,q,f+T,h1,col,y0,wgLow):box(f-T,p,f+T,q,h1,col,y0,wgLow);
+      H?box(p,f-T,q,f+T,h2,col,CUT_H,wgHigh):box(f-T,p,f+T,q,h2,col,CUT_H,wgHigh);
+    }
+  };
+  const gl=(p,q,y0,h)=>{
+    const grp=y0>=CUT_H?wgHigh:(y0+h<=CUT_H?wgLow:wgHigh);
+    H?box(p,f-1.5,q,f+1.5,h,'glass',y0,grp):box(f-1.5,p,f+1.5,q,h,'glass',y0,grp);
+  };
+  const fr=(p,q,k)=>{
+    const c2=0xe9e3d8,w=T+1.5;
+    [[p-3,p],[q,q+3]].forEach(v=>{
+      H?box(v[0],f-w,v[1],f+w,CUT_H,c2,0,wgLow):box(f-w,v[0],f+w,v[1],CUT_H,c2,0,wgLow);
+      H?box(v[0],f-w,v[1],f+w,2.1-CUT_H,c2,CUT_H,wgHigh):box(f-w,v[0],f+w,v[1],2.1-CUT_H,c2,CUT_H,wgHigh);
+    });
+    H?box(p-3,f-w,q+3,f+w,.06,c2,2.1,wgHigh):box(f-w,p-3,f+w,q+3,.06,c2,2.1,wgHigh);
+    if(k==='w')H?box(p-3,f-w-2,q+3,f+w+2,.05,c2,.88,wgLow):box(f-w-2,p-3,f+w+2,q+3,.05,c2,.88,wgLow);
+  };
   let cur=a-T;
   gaps.sort((m,n)=>m[0]-n[0]).forEach(([p,q,k])=>{seg(cur,p,0,WH,c);
     if(k==='d')seg(p,q,2.1,WH-2.1,c);
@@ -130,11 +235,18 @@ const DK=0x6b6b6b;
 ].forEach(w=>wall(w[0],w[1],w[2],w[3],w[4],w[5]));
 
 // structural columns & beams (紅色虛線)
-[[232,150,388,305],[1643,150,1870,310],[232,1280,385,1465],[605,1285,735,1330],[1612,1295,1668,1465]].forEach(c=>box(...c,WH,0x8c8c88));
-[[903,690,917,1270],[1678,310,1688,505],[1745,310,1755,505]].forEach(c=>box(...c,.4,0xd9a08a,2.05));
+[[232,150,388,305],[1643,150,1870,310],[232,1280,385,1465],[605,1285,735,1330],[1612,1295,1668,1465]].forEach(c=>{
+  box(...c,CUT_H,0x8c8c88,0,wgLow);
+  box(...c,WH-CUT_H,0x8c8c88,CUT_H,wgHigh);
+});
+[[903,690,917,1270],[1678,310,1688,505],[1745,310,1755,505]].forEach(c=>box(...c,.4,0xd9a08a,2.05,wgHigh));
 
-function leaf(x,y,len,th){const m=new THREE.Mesh(new THREE.BoxGeometry(len*S,2.05,.04),mat(0xb78a5a));
-  const g=new THREE.Group();m.position.set(len*S/2,1.025,0);g.add(m);g.position.set((x-CX)*S,0,(y-CY)*S);g.rotation.y=th;wg.add(g)}
+function leaf(x,y,len,th){
+  [[0,CUT_H,wgLow],[CUT_H,2.05-CUT_H,wgHigh]].forEach(([y0,h,grp])=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(len*S,h,.04),mat(0xb78a5a));
+    const g=new THREE.Group();m.position.set(len*S/2,y0+h/2,0);g.add(m);g.position.set((x-CX)*S,0,(y-CY)*S);g.rotation.y=th;grp.add(g);
+  });
+}
 leaf(399,676,95,Math.PI/2);leaf(704,694,95,Math.PI/2);leaf(601,703,108,Math.PI);leaf(2036,495,155,Math.PI);
 
 const gr=0xb5b2ab,wd=0xc59a68,wh=0xf4f2ee,cush=0xd9d6cf,or=0xc9814a;
@@ -258,13 +370,13 @@ cyl(632,655,6,6,.01,0x555555,.0);cyl(500,640,6,6,.01,0x555555,0);
 box(503,590,558,594,.7,'glass',1.15);box(815,592,863,596,.7,'glass',1.15);
 box(380,500,386,560,.04,0xaaaaaa,1.0);box(880,560,886,620,.04,0xaaaaaa,1.0);
 
-// 陽台欄杆
+// 陽台欄杆（固定全高於 wgLow）
 (function(){const h=WH/2,t=1.6;
  [[1250-t,1290,1250+t,1474],[1665-t,1290,1665+t,1474],[1250-t,1474-t*2,1665+t,1474]].forEach(b=>{
-   box(b[0],b[1],b[2],b[3],h,'glass',0,wg);
-   box(b[0]-1.5,b[1],b[2]+1.5,b[3],.05,0x4a4a4a,h,wg);
-   box(b[0]-1.5,b[1],b[2]+1.5,b[3],.05,0x4a4a4a,0,wg)});
- [[1250,1290],[1665,1290],[1250,1472],[1665,1472]].forEach(p=>box(p[0]-2.5,p[1]-2.5,p[0]+2.5,p[1]+2.5,h,0x4a4a4a,0,wg));
+   box(b[0],b[1],b[2],b[3],h,'glass',0,wgLow);
+   box(b[0]-1.5,b[1],b[2]+1.5,b[3],.05,0x4a4a4a,h,wgLow);
+   box(b[0]-1.5,b[1],b[2]+1.5,b[3],.05,0x4a4a4a,0,wgLow)});
+ [[1250,1290],[1665,1290],[1250,1472],[1665,1472]].forEach(p=>box(p[0]-2.5,p[1]-2.5,p[0]+2.5,p[1]+2.5,h,0x4a4a4a,0,wgLow));
 })();
 
 // 空間名稱標籤
@@ -272,7 +384,7 @@ const labs=new THREE.Group();sc.add(labs);
 function label(t,x,y){const c=document.createElement('canvas');c.width=256;c.height=80;const g=c.getContext('2d');
   g.fillStyle='rgba(30,26,22,.78)';g.fillRect(4,8,248,64);g.fillStyle='#fff';g.font='bold 38px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(t,128,41);
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));
-  s.scale.set(1.7,.53,1);s.position.set((x-CX)*S,2.9,(y-CY)*S);s.renderOrder=9;labs.add(s)}
+  s.scale.set(1.7,.53,1);s.position.set((x-CX)*S,2.9,(y-CY)*S);s.renderOrder=9;s.userData.room=t;labs.add(s)}
 [['主臥房',470,1000],['主浴廁',480,590],['公共浴廁',740,590],['開放廚房',1030,560],['後陽台',1040,380],['多功能房',790,1000],['書房',1030,1060],['客廳',1470,1000],['餐廳',1440,760],['玄關',1800,420],['前陽台',1460,1380]].forEach(l=>label(...l));
 
 // controls & 區域定義
@@ -280,7 +392,7 @@ const $=id=>document.getElementById(id);
 let night=false,focus=null;
 const RM=[['主臥房',243,682,650,1285],['主浴廁',388,305,588,675],['公共浴廁',588,468,892,696],['後陽台',888,250,1192,470],['開放廚房',885,470,1322,706],['多功能房',652,823,912,1285],['書房',912,812,1190,1285],['客廳',1190,812,1650,1290],['餐廳',1245,296,1650,812],['玄關',1648,250,2045,515],['前陽台',1245,1290,1670,1480]];
 
-// ===== 動態 3D 尺寸標註（全戶外觀 vs 單一區域長寬） =====
+// ===== 動態 3D 尺寸標註 & 區域範圍框 =====
 const dims=new THREE.Group();sc.add(dims);
 function clearDims(){
   while(dims.children.length){
@@ -295,9 +407,9 @@ function addDimLine(x1,y1,x2,y2,offX,offY,prefix='',alwaysTop=false){
   const ax=(x1+offX-CX)*S,az=(y1+offY-CY)*S;
   const bx=(x2+offX-CX)*S,bz=(y2+offY-CY)*S;
   const ox=(x1-CX)*S,oz=(y1-CY)*S,px=(x2-CX)*S,pz=(y2-CY)*S;
-  const y=.03;
+  const y=.045;
   const lineMat=new THREE.LineBasicMaterial({color:0xc93b2b,depthTest:!alwaysTop});
-  const extMat=new THREE.LineBasicMaterial({color:0xc93b2b,transparent:true,opacity:.45,depthTest:!alwaysTop});
+  const extMat=new THREE.LineBasicMaterial({color:0xc93b2b,transparent:true,opacity:.5,depthTest:!alwaysTop});
   const addL=(p1,p2,m)=>{const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([p1,p2]),m);if(alwaysTop)l.renderOrder=7;dims.add(l)};
   addL(new THREE.Vector3(ax,y,az),new THREE.Vector3(bx,y,bz),lineMat);
   addL(new THREE.Vector3(ox,y,oz),new THREE.Vector3(ax,y,az),extMat);
@@ -307,17 +419,16 @@ function addDimLine(x1,y1,x2,y2,offX,offY,prefix='',alwaysTop=false){
     addL(new THREE.Vector3(tx-Math.cos(ang)*tk,y,tz-Math.sin(ang)*tk),new THREE.Vector3(tx+Math.cos(ang)*tk,y,tz+Math.sin(ang)*tk),lineMat);
   });
   const c=document.createElement('canvas');c.width=260;c.height=64;const g=c.getContext('2d');
-  g.fillStyle='rgba(255,250,245,.94)';g.fillRect(4,6,252,52);
+  g.fillStyle='rgba(255,250,245,.95)';g.fillRect(4,6,252,52);
   g.strokeStyle='#c93b2b';g.lineWidth=3;g.strokeRect(4,6,252,52);
   g.fillStyle='#b8291a';g.font='bold 28px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(labelStr,130,33);
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));
-  sp.scale.set(1.5,.37,1);sp.position.set((ax+bx)/2,.22,(az+bz)/2);sp.renderOrder=8;
+  sp.scale.set(1.45,.36,1);sp.position.set((ax+bx)/2,.22,(az+bz)/2);sp.renderOrder=8;
   dims.add(sp);
 }
 function renderDims(){
   clearDims();
   if(!focus){
-    // 全戶模式：顯示外圍外觀尺寸
     addDimLine(243,1280,1670,1280,0,245);   // 下側主外牆總長
     addDimLine(1250,1474,1665,1474,0,65);   // 前陽台面寬
     addDimLine(243,262,1648,262,0,-75);     // 上側主建築總寬
@@ -326,12 +437,20 @@ function renderDims(){
     addDimLine(2040,260,2040,510,85,0);     // 右側玄關外牆深
     addDimLine(1648,510,1648,1285,85,0);    // 右側客廳外牆深
   }else{
-    // 單一區域模式：僅顯示該區域範圍的寬與長
     const r=RM.find(q=>q[0]===focus);
     if(r){
       const [,x1,y1,x2,y2]=r;
-      addDimLine(x1,y2,x2,y2,0,36,'寬 ',true);
-      addDimLine(x2,y1,x2,y2,36,0,'長 ',true);
+      const bx1=(x1-CX)*S,bz1=(y1-CY)*S,bx2=(x2-CX)*S,bz2=(y2-CY)*S,y=.042;
+      const boxPts=[
+        new THREE.Vector3(bx1,y,bz1),new THREE.Vector3(bx2,y,bz1),
+        new THREE.Vector3(bx2,y,bz2),new THREE.Vector3(bx1,y,bz2),
+        new THREE.Vector3(bx1,y,bz1)
+      ];
+      const outline=new THREE.Line(new THREE.BufferGeometry().setFromPoints(boxPts),new THREE.LineBasicMaterial({color:0xd97724,transparent:true,opacity:.75,depthTest:false}));
+      outline.renderOrder=6;
+      dims.add(outline);
+      addDimLine(x1,y2,x2,y2,0,34,'寬 ',true);
+      addDimLine(x2,y1,x2,y2,34,0,'長 ',true);
     }
   }
 }
@@ -344,21 +463,27 @@ RM.forEach(([name,x1,y1,x2,y2])=>{
   totalM2+=m2;
   roomStats[name]={wCm:Math.round(wM*100),dCm:Math.round(dM*100),m2:m2.toFixed(1),ping:(m2*0.3025).toFixed(1)};
 });
-function updateInfo(){
-  if(!focus){
-    $('info').textContent=`全戶概算：約 ${(totalM2*0.3025).toFixed(1)} 坪（${totalM2.toFixed(1)} m²）`;
-  }else{
-    const s=roomStats[focus];
-    $('info').textContent=`${focus}：約 ${s.wCm} × ${s.dCm} cm ｜ 約 ${s.ping} 坪（${s.m2} m²）`;
-  }
+function getSummaryText(){
+  if(!focus)return`全戶概算：約 ${(totalM2*0.3025).toFixed(1)} 坪（${totalM2.toFixed(1)} m²）`;
+  const s=roomStats[focus];
+  return`${focus}：約 ${s.wCm} × ${s.dCm} cm ｜ 約 ${s.ping} 坪（${s.m2} m²）`;
 }
+function updateInfo(){$('info').textContent=getSummaryText()}
 
 const V=new THREE.Vector3();
 function roomOf(m){m.getWorldPosition(V);const px=V.x/S+CX,py=V.z/S+CY;for(const r of RM)if(px>=r[1]&&px<=r[3]&&py>=r[2]&&py<=r[4])return r[0];return null}
 sc.updateMatrixWorld(true);
-const meshes=[];sc.traverse(o=>{if(o.isMesh&&o!==gnd){o.userData.m0=o.material;o.userData.room=roomOf(o);meshes.push(o)}});
-const dimC=new Map();
-function dimOf(m){let x=dimC.get(m);if(!x){x=m.clone();x.color.multiplyScalar(night?.16:.28);if(x.emissive)x.emissiveIntensity*=.15;dimC.set(m,x)}return x}
+
+const meshes=[];
+sc.traverse(o=>{
+  if(o.isMesh&&o!==gnd){
+    const m0=o.material;
+    const mDay=m0.clone();mDay.color.multiplyScalar(.28);if(mDay.emissive)mDay.emissiveIntensity*=.15;
+    const mNight=m0.clone();mNight.color.multiplyScalar(.16);if(mNight.emissive)mNight.emissiveIntensity*=.15;
+    o.userData={m0,mDay,mNight,room:roomOf(o)};
+    meshes.push(o);
+  }
+});
 
 function apply(){
   sc.background.set(night?0x0a0e1a:(dark?0x25221e:0xd8d2c7));
@@ -368,8 +493,10 @@ function apply(){
   lampShadeMat.emissiveIntensity=night?1.35:.12;
   lampBulbMat.emissiveIntensity=night?2.4:.25;
 
-  dimC.clear();
-  meshes.forEach(m=>{const on=!focus||m.userData.room===focus;m.material=on?m.userData.m0:dimOf(m.userData.m0)});
+  meshes.forEach(m=>{
+    const on=!focus||m.userData.room===focus;
+    m.material=on?m.userData.m0:(night?m.userData.mNight:m.userData.mDay);
+  });
   PLS.forEach(p=>{const r=RM.find(q=>p.x>=q[1]&&p.x<=q[3]&&p.y>=q[2]&&p.y<=q[4]);const on=!focus||(r&&r[0]===focus);p.l.intensity=!on?0:(night?1.2:.1)});
   document.querySelectorAll('#rooms button').forEach(b=>b.classList.toggle('on',(b.dataset.r||null)===focus));
   $('dn').textContent=night?'☀ 白天':'🌙 夜晚';$('dn').classList.toggle('on',night);
@@ -377,20 +504,89 @@ function apply(){
   renderDims();
 }
 
-function pick(n){
+function pick(n,keepCam=false){
   focus=n;
-  const r=RM.find(q=>q[0]===n);
-  const nt=r?new THREE.Vector3(((r[1]+r[3])/2-CX)*S,0,((r[2]+r[4])/2-CY)*S):new THREE.Vector3(0,0,0);
-  const curTgt=goalTgt||ctl.target;
-  const curPos=goalPos||cam.position;
-  const offset=nt.clone().sub(curTgt);
-  flyTo(curPos.clone().add(offset),nt);
+  if(!keepCam){
+    const r=RM.find(q=>q[0]===n);
+    const nt=r?new THREE.Vector3(((r[1]+r[3])/2-CX)*S,0,((r[2]+r[4])/2-CY)*S):new THREE.Vector3(0,0,0);
+    const curTgt=goalTgt||ctl.target;
+    const curPos=goalPos||cam.position;
+    const offset=nt.clone().sub(curTgt);
+    flyTo(curPos.clone().add(offset),nt);
+  }
   apply();
 }
 
 [['全部',null],...RM.map(r=>[r[0],r[0]])].forEach(([t,n])=>{const b=document.createElement('button');b.textContent=t;if(n)b.dataset.r=n;b.onclick=()=>pick(n);$('rooms').appendChild(b)});
 $('dn').onclick=()=>{night=!night;apply()};
 apply();
+
+// ===== 點擊 3D 地板或空間名稱標籤直接聚焦 =====
+const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();
+let downX=0,downY=0,downTime=0;
+cv.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY;downTime=performance.now()});
+cv.addEventListener('pointerup',e=>{
+  if(panMode)return; // 平移模式下點擊不觸發切換
+  if(Math.hypot(e.clientX-downX,e.clientY-downY)>6||performance.now()-downTime>350)return;
+  const rect=cv.getBoundingClientRect();
+  ptr.x=((e.clientX-rect.left)/rect.width)*2-1;
+  ptr.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  ray.setFromCamera(ptr,cam);
+  if(labs.visible){
+    const hitLab=ray.intersectObjects(labs.children,false);
+    if(hitLab.length){pick(hitLab[0].object.userData.room);return;}
+  }
+  const hitFloor=ray.intersectObjects(floorGroup.children,false);
+  if(hitFloor.length){
+    const pt=hitFloor[0].point;
+    const px=pt.x/S+CX,py=pt.z/S+CY;
+    const found=RM.find(r=>px>=r[1]&&px<=r[3]&&py>=r[2]&&py<=r[4]);
+    if(found){pick(found[0]);return;}
+  }
+  if(focus)pick(null);
+});
+
+// ===== 平移功能（操作模式切換 ＋ 方向鍵/螢幕方向按鈕） =====
+let panMode=false;
+$('mode').onclick=e=>{
+  panMode=!panMode;
+  ctl.mouseButtons.LEFT=panMode?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
+  ctl.touches.ONE=panMode?THREE.TOUCH.PAN:THREE.TOUCH.ROTATE;
+  e.target.textContent=panMode?'✋ 模式:平移':'✋ 模式:旋轉';
+  e.target.classList.toggle('on',panMode);
+  $('t').textContent=panMode?'單指/左鍵拖曳平移 ・ 滾輪縮放':'拖曳旋轉 ・ 右鍵/雙指平移 ・ 滾輪縮放';
+};
+
+function panStep(dx,dz){
+  const curTgt=goalTgt||ctl.target;
+  const curPos=goalPos||cam.position;
+  // 依目前視角水平方向計算前後左右向量
+  const fwd=new THREE.Vector3();
+  cam.getWorldDirection(fwd);
+  fwd.y=0;
+  if(fwd.lengthSq()<1e-5)fwd.set(0,0,-1);
+  fwd.normalize();
+  const right=new THREE.Vector3().crossVectors(fwd,new THREE.Vector3(0,1,0)).normalize();
+  const dist=curPos.distanceTo(curTgt);
+  const step=Math.max(.55,dist*.12);
+  const delta=new THREE.Vector3().addScaledVector(right,dx*step).addScaledVector(fwd,-dz*step);
+  flyTo(curPos.clone().add(delta),curTgt.clone().add(delta));
+}
+$('pl').onclick=()=>panStep(-1,0);
+$('pr').onclick=()=>panStep(1,0);
+$('pu').onclick=()=>panStep(0,-1);
+$('pd').onclick=()=>panStep(0,1);
+
+addEventListener('keydown',e=>{
+  if($('printModal').classList.contains('open')){
+    if(e.key==='Escape')$('printModal').classList.remove('open');
+    return;
+  }
+  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')panStep(-1,0);
+  else if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')panStep(1,0);
+  else if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')panStep(0,-1);
+  else if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')panStep(0,1);
+});
 
 function dolly(f){
   const curTgt=goalTgt||ctl.target;
@@ -407,11 +603,68 @@ function rot(a){
 $('l').onclick=()=>rot(-.35);$('r').onclick=()=>rot(.35);
 $('zi').onclick=()=>dolly(.8);$('zo').onclick=()=>dolly(1.25);
 $('auto').onclick=e=>{ctl.autoRotate=!ctl.autoRotate;e.target.classList.toggle('on',ctl.autoRotate)};ctl.autoRotateSpeed=1.5;
-let full=true;$('wall').onclick=e=>{full=!full;wg.scale.y=full?1:.14;e.target.textContent=full?'牆體:全高':'牆體:矮牆';e.target.classList.toggle('on',full)};
+
+let full=true;
+$('wall').onclick=e=>{
+  full=!full;
+  wgHigh.visible=full;
+  e.target.textContent=full?'牆體:全高':'牆體:矮牆';
+  e.target.classList.toggle('on',full);
+};
+
 $('dimBtn').onclick=e=>{dims.visible=!dims.visible;e.target.classList.toggle('on',dims.visible)};
 $('lab').onclick=e=>{labs.visible=!labs.visible;e.target.classList.toggle('on',labs.visible)};
-$('top').onclick=()=>flyTo(new THREE.Vector3(0,24,.05),new THREE.Vector3(0,0,0));
+
+$('eye').onclick=()=>{
+  ctl.maxPolarAngle=Math.PI*.85;
+  const r=RM.find(q=>q[0]===(focus||'客廳'));
+  const cx=((r[1]+r[3])/2-CX)*S,cz=((r[2]+r[4])/2-CY)*S;
+  flyTo(new THREE.Vector3(cx,1.65,cz+1.8),new THREE.Vector3(cx,1.25,cz-.6));
+};
+
+$('top').onclick=()=>{ctl.maxPolarAngle=Math.PI/2.03;flyTo(new THREE.Vector3(0,24,.05),new THREE.Vector3(0,0,0))};
 $('iso').onclick=()=>iso(false);
+
+// ===== 預覽列印功能 =====
+let lastSnapUrl='';
+$('printBtn').onclick=()=>{
+  ctl.update();
+  R.render(sc,cam);
+  lastSnapUrl=cv.toDataURL('image/png');
+  $('printImg').src=lastSnapUrl;
+
+  const now=new Date();
+  const dateStr=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  $('psMeta').innerHTML=`檢視區域：<strong>${focus||'全戶配置'}</strong><br>製表日期：${dateStr}`;
+  $('psSummary').textContent=getSummaryText();
+
+  const tbody=$('psBody');
+  tbody.innerHTML='';
+  RM.forEach(([name])=>{
+    const s=roomStats[name];
+    const tr=document.createElement('tr');
+    if(focus===name)tr.className='hl';
+    tr.innerHTML=`<td>${name}</td><td>${s.wCm} × ${s.dCm} cm</td><td>${s.m2} m²</td><td>約 ${s.ping} 坪</td>`;
+    tbody.appendChild(tr);
+  });
+  const totalTr=document.createElement('tr');
+  totalTr.style.fontWeight='700';
+  totalTr.style.background='#f7f3ec';
+  totalTr.innerHTML=`<td>全戶合計（概算）</td><td>—</td><td>${totalM2.toFixed(1)} m²</td><td>約 ${(totalM2*0.3025).toFixed(1)} 坪</td>`;
+  tbody.appendChild(totalTr);
+
+  $('printModal').classList.add('open');
+};
+$('closePrintBtn').onclick=()=>$('printModal').classList.remove('open');
+$('printModal').onclick=e=>{if(e.target===$('printModal'))$('printModal').classList.remove('open')};
+$('doPrintBtn').onclick=()=>window.print();
+$('dlImgBtn').onclick=()=>{
+  if(!lastSnapUrl)return;
+  const a=document.createElement('a');
+  a.href=lastSnapUrl;
+  a.download=`平面配置3D_${focus||'全戶'}.png`;
+  a.click();
+};
 
 function rs(){R.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}
 addEventListener('resize',rs);rs();
