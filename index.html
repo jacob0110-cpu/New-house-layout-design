@@ -234,12 +234,11 @@ const DK=0x6b6b6b;
 [608,682,608,822,undefined,[[701,809,'d']]],[608,822,652,822],[652,822,652,1280],[652,823,912,823,undefined,[[800,905,'s']]],[912,820,912,1280]
 ].forEach(w=>wall(w[0],w[1],w[2],w[3],w[4],w[5]));
 
-// structural columns & beams (紅色虛線)
+// structural columns
 [[232,150,388,305],[1643,150,1870,310],[232,1280,385,1465],[605,1285,735,1330],[1612,1295,1668,1465]].forEach(c=>{
   box(...c,CUT_H,0x8c8c88,0,wgLow);
   box(...c,WH-CUT_H,0x8c8c88,CUT_H,wgHigh);
 });
-[[903,690,917,1270],[1678,310,1688,505],[1745,310,1755,505]].forEach(c=>box(...c,.4,0xd9a08a,2.05,wgHigh));
 
 function leaf(x,y,len,th){
   [[0,CUT_H,wgLow],[CUT_H,2.05-CUT_H,wgHigh]].forEach(([y0,h,grp])=>{
@@ -526,7 +525,7 @@ const ray=new THREE.Raycaster(),ptr=new THREE.Vector2();
 let downX=0,downY=0,downTime=0;
 cv.addEventListener('pointerdown',e=>{downX=e.clientX;downY=e.clientY;downTime=performance.now()});
 cv.addEventListener('pointerup',e=>{
-  if(panMode)return; // 平移模式下點擊不觸發切換
+  if(panMode)return;
   if(Math.hypot(e.clientX-downX,e.clientY-downY)>6||performance.now()-downTime>350)return;
   const rect=cv.getBoundingClientRect();
   ptr.x=((e.clientX-rect.left)/rect.width)*2-1;
@@ -546,7 +545,7 @@ cv.addEventListener('pointerup',e=>{
   if(focus)pick(null);
 });
 
-// ===== 平移功能（操作模式切換 ＋ 方向鍵/螢幕方向按鈕） =====
+// ===== 平移功能 =====
 let panMode=false;
 $('mode').onclick=e=>{
   panMode=!panMode;
@@ -560,7 +559,6 @@ $('mode').onclick=e=>{
 function panStep(dx,dz){
   const curTgt=goalTgt||ctl.target;
   const curPos=goalPos||cam.position;
-  // 依目前視角水平方向計算前後左右向量
   const fwd=new THREE.Vector3();
   cam.getWorldDirection(fwd);
   fwd.y=0;
